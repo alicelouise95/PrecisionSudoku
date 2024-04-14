@@ -187,7 +187,7 @@ class MainActivity : ComponentActivity() {
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .border(0.5.dp, if (isSelected) Color.Blue else Color.Black)
+                .border(0.dp, if (isSelected) Color.Blue else Color.Black)
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
@@ -254,6 +254,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun resetTimer() {
+        elapsedTime = 0
+        startTimer()
+    }
+
     @Composable
     fun GameOverPopup(onRetry: () -> Unit) {
         AlertDialog(
@@ -262,9 +267,36 @@ class MainActivity : ComponentActivity() {
             text = { Text("You've made 3 mistakes.") },
             confirmButton = {
                 Button(
-                    onClick = onRetry
+                    onClick = {
+                        onRetry()
+                        resetTimer() // Reset the timer when starting a new game
+                    }
                 ) {
                     Text("Try a new puzzle")
+                }
+            },
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        )
+    }
+
+    @Composable
+    fun CongratsPopup() {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Congratulations!") },
+            text = {
+                Column {
+                    Text("You completed the puzzle in ${elapsedTime / 60} minutes.")
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        sudokuPuzzle = generateSudokuPuzzle()
+                        resetTimer() // Reset the timer when starting a new game
+                    }
+                ) {
+                    Text("Try another puzzle")
                 }
             },
             properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
@@ -310,7 +342,18 @@ fun generateSudokuPuzzle(): Array<Array<Int>> {
     return sudoku
 }
 
-private fun removeNumbersFromSudoku(sudoku: Array<Array<Int>>, cellsToRemove: Int) {
+fun isPuzzleCompleted(sudoku: Array<Array<Int>>): Boolean {
+    for (row in sudoku) {
+        for (cell in row) {
+            if (cell == 0) {
+                return false
+            }
+        }
+    }
+    return true
+}
+
+fun removeNumbersFromSudoku(sudoku: Array<Array<Int>>, cellsToRemove: Int) {
     val random = java.util.Random()
     var count = 0
     while (count < cellsToRemove) {
@@ -323,7 +366,7 @@ private fun removeNumbersFromSudoku(sudoku: Array<Array<Int>>, cellsToRemove: In
     }
 }
 
-private fun solveSudoku(sudoku: Array<Array<Int>>): Boolean {
+fun solveSudoku(sudoku: Array<Array<Int>>): Boolean {
     for (row in 0 until 9) {
         for (col in 0 until 9) {
             if (sudoku[row][col] == 0) {
@@ -343,7 +386,7 @@ private fun solveSudoku(sudoku: Array<Array<Int>>): Boolean {
     return true
 }
 
-private fun isNumberValid(sudoku: Array<Array<Int>>, row: Int, col: Int, number: Int): Boolean {
+fun isNumberValid(sudoku: Array<Array<Int>>, row: Int, col: Int, number: Int): Boolean {
     // Check row
     for (j in 0 until 9) {
         if (sudoku[row][j] == number) return false
