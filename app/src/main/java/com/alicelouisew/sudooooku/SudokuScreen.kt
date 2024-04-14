@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.alicelouisew.sudooooku.ui.theme.SudooookuTheme
 import kotlinx.coroutines.*
+import java.util.Random
 
 class MainActivity : ComponentActivity() {
     private var sudokuPuzzle by mutableStateOf<Array<Array<Int>>?>(null)
@@ -339,22 +340,19 @@ class MainActivity : ComponentActivity() {
 
 fun generateSudokuPuzzle(): Array<Array<Int>> {
     val sudoku = Array(9) { Array(9) { 0 } }
-    val solution = Array(9) { Array(9) { 0 } }
 
-    // Generate a valid solution
-    solveSudoku(solution)
-
-    // Copy the solution to the sudoku grid
-    for (i in 0 until 9) {
-        for (j in 0 until 9) {
-            sudoku[i][j] = solution[i][j]
-        }
-    }
+    // Fill the Sudoku puzzle with valid numbers
+    fillSudoku(sudoku)
 
     // Remove numbers randomly while ensuring the puzzle remains solvable
-    removeNumbersFromSudoku(sudoku, 40) // Adjust the number of cells to remove as needed
+    val random = Random()
+    removeNumbersFromSudoku(sudoku, 1) // Adjust the range of cells to remove as needed
 
     return sudoku
+}
+
+fun fillSudoku(sudoku: Array<Array<Int>>) {
+    solveSudoku(sudoku) // Start with a complete solution
 }
 
 fun isPuzzleCompleted(sudoku: Array<Array<Int>>): Boolean {
@@ -382,23 +380,36 @@ fun removeNumbersFromSudoku(sudoku: Array<Array<Int>>, cellsToRemove: Int) {
 }
 
 fun solveSudoku(sudoku: Array<Array<Int>>): Boolean {
-    for (row in 0 until 9) {
-        for (col in 0 until 9) {
-            if (sudoku[row][col] == 0) {
-                for (num in 1..9) {
-                    if (isNumberValid(sudoku, row, col, num)) {
-                        sudoku[row][col] = num
-                        if (solveSudoku(sudoku)) {
-                            return true
-                        }
-                        sudoku[row][col] = 0
-                    }
-                }
-                return false
+    val emptyCell = findEmptyCell(sudoku)
+    if (emptyCell == null) {
+        // If no empty cell is found, the puzzle is solved
+        return true
+    }
+
+    val (row, col) = emptyCell
+    val numbers = (1..9).shuffled() // Shuffle the numbers to insert randomly
+
+    for (number in numbers) {
+        if (isNumberValid(sudoku, row, col, number)) {
+            sudoku[row][col] = number
+            if (solveSudoku(sudoku)) {
+                return true
+            }
+            sudoku[row][col] = 0
+        }
+    }
+    return false
+}
+
+fun findEmptyCell(sudoku: Array<Array<Int>>): Pair<Int, Int>? {
+    for (i in 0 until 9) {
+        for (j in 0 until 9) {
+            if (sudoku[i][j] == 0) {
+                return Pair(i, j)
             }
         }
     }
-    return true
+    return null
 }
 
 fun isNumberValid(sudoku: Array<Array<Int>>, row: Int, col: Int, number: Int): Boolean {
