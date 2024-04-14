@@ -3,6 +3,7 @@ package com.alicelouisew.sudooooku
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,19 +12,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.alicelouisew.sudooooku.ui.theme.SudooookuTheme
 import kotlinx.coroutines.*
 
-class SudokuScreen : ComponentActivity() {
+class MainActivity : ComponentActivity() {
     private var sudokuPuzzle by mutableStateOf<Array<Array<Int>>?>(null)
-    private var showDialog by mutableStateOf(false)
-    private var selectedCell by mutableStateOf(Pair(-1, -1))
-    private var selectedNumber by mutableStateOf(1) // Added this line
+    private var selectedCell by mutableStateOf<Pair<Int, Int>?>(null)
+    private var selectedNumber by mutableStateOf(1)
     private var timerJob: Job? = null
     private var elapsedTime by mutableStateOf(0)
+    private var mistakesCount by mutableStateOf(0)
+    private var gameOverPopupVisible by mutableStateOf(false)
+    private var wrongNumberVisible by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,22 +36,51 @@ class SudokuScreen : ComponentActivity() {
             SudooookuTheme {
                 if (sudokuPuzzle == null) {
                     startTimer()
+                    sudokuPuzzle = generateSudokuPuzzle()
                 }
 
-                if (showDialog) {
-                    NumberInputDialog(selectedNumber) { number ->
-                        if (selectedCell.first >= 0 && selectedCell.second >= 0) {
-                            sudokuPuzzle?.let {
-                                it[selectedCell.first][selectedCell.second] = number
+                SudokuBoard(
+                    sudoku = sudokuPuzzle!!,
+                    selectedCell = selectedCell,
+                    onCellClicked = { i, j ->
+                        selectedCell = Pair(i, j)
+                    },
+                    onNumberSelected = { number ->
+                        selectedCell?.let { (i, j) ->
+                            val isValid = isNumberValid(sudokuPuzzle!!, i, j, number)
+                            if (isValid) {
+                                sudokuPuzzle?.let {
+                                    it[i][j] = number
+                                    selectedCell = null
+                                    wrongNumberVisible = false
+                                }
+                            } else {
+                                selectedCell = null
+                                wrongNumberVisible = true
+                                mistakesCount++
+                                if (mistakesCount >= 3) {
+                                    gameOverPopupVisible = true
+                                } else {
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        delay(2000)
+                                        wrongNumberVisible = false
+                                    }
+                                }
                             }
                         }
-                        showDialog = false
+                    }
+                )
+
+                if (gameOverPopupVisible) {
+                    GameOverPopup {
+                        sudokuPuzzle = generateSudokuPuzzle()
+                        mistakesCount = 0
+                        gameOverPopupVisible = false
+                        wrongNumberVisible = false // Reset the wrong number message visibility
                     }
                 }
-                SudokuBoard(sudokuPuzzle ?: generateSudokuPuzzle()) { i, j ->
-                    selectedCell = Pair(i, j)
-                    showDialog = true
-                }
+
+                MistakesCount(mistakesCount)
             }
         }
     }
@@ -73,27 +107,33 @@ class SudokuScreen : ComponentActivity() {
         timerJob = null
     }
 
-
     @Composable
-    fun SudokuBoard(sudoku: Array<Array<Int>>, onCellClicked: (Int, Int) -> Unit) {
+    fun SudokuBoard(
+        sudoku: Array<Array<Int>>,
+        selectedCell: Pair<Int, Int>?,
+        onCellClicked: (Int, Int) -> Unit,
+        onNumberSelected: (Int) -> Unit
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Box(
-                modifier = Modifier.align(Alignment.TopCenter),
-                contentAlignment = Alignment.Center
+            // Display elapsed time above the puzzle box
+            Text(
+                text = "Time: ${elapsedTime / 60}:${String.format("%02d", elapsedTime % 60)}",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(bottom = 16.dp)
+            )
+
+            // Display Sudoku cells
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 30.dp) // Adjust the top padding to move the Sudoku puzzle down
             ) {
-                Text(
-                    text = "Time: ${elapsedTime / 60}:${String.format("%02d", elapsedTime % 60)}",
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
-
-            Column {
-                Spacer(modifier = Modifier.height(32.dp))
-
                 for (i in 0 until 9) {
                     if (i % 3 == 0 && i != 0) {
                         Spacer(modifier = Modifier.height(2.dp))
@@ -103,35 +143,51 @@ class SudokuScreen : ComponentActivity() {
                             if (j % 3 == 0 && j != 0) {
                                 Spacer(modifier = Modifier.width(2.dp))
                             }
+                            val isSelected = selectedCell?.first == i && selectedCell.second == j
                             SudokuCell(
                                 number = sudoku[i][j],
-                                onClick = { onCellClicked(i, j) }
+                                onClick = { onCellClicked(i, j) },
+                                isSelected = isSelected,
+                                onNumberSelected = onNumberSelected
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    for (num in 1..9) {
-                        NumberButton(number = num, onNumberSelected = {
-                            if (it in 1..9) {
-                                onCellClicked(-1, -1)
-                                showDialog = true
-                                selectedNumber = it
-                            }
-                        })
-                    }
+            }
+
+            // Display number buttons below the puzzle box
+            Row(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(top = 40.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                for (num in 1..9) {
+                    NumberButton(
+                        number = num,
+                        onNumberSelected = onNumberSelected
+                    )
                 }
+            }
+
+            // Show wrong number message
+            if (wrongNumberVisible) {
+                WrongNumberMessage()
             }
         }
     }
 
     @Composable
-    fun SudokuCell(number: Int, onClick: () -> Unit) {
+    fun SudokuCell(
+        number: Int,
+        onClick: () -> Unit,
+        isSelected: Boolean,
+        onNumberSelected: (Int) -> Unit
+    ) {
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .border(0.5.dp, Color.Black)
+                .border(0.5.dp, if (isSelected) Color.Blue else Color.Black)
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
@@ -156,23 +212,62 @@ class SudokuScreen : ComponentActivity() {
     }
 
     @Composable
-    fun NumberInputDialog(selectedNumber: Int, onNumberSelected: (Int) -> Unit) {
+    fun WrongNumberMessage() {
+        val shakeOffset = rememberInfiniteTransition().animateFloat(
+            initialValue = 0f,
+            targetValue = 10f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(100, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+
+        Column(
+            modifier = Modifier
+                .padding(bottom = 16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .offset(x = shakeOffset.value.dp)
+            ) {
+                Text(
+                    text = "Wrong number!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Red
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun MistakesCount(count: Int) {
+        Box(
+            modifier = Modifier
+                .padding(end = 16.dp)
+        ) {
+            Text(
+                text = "Mistakes: $count / 3",
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = 16.sp
+            )
+        }
+    }
+
+    @Composable
+    fun GameOverPopup(onRetry: () -> Unit) {
         AlertDialog(
             onDismissRequest = { },
-            title = { Text("Select Number") },
-            text = {
-                Column {
-                    Button(onClick = { onNumberSelected(selectedNumber) }) {
-                        Text(selectedNumber.toString())
-                    }
-                }
-            },
+            title = { Text("Game Over!") },
+            text = { Text("You've made 3 mistakes.") },
             confirmButton = {
-                Button(onClick = { }) {
-                    Text("Cancel")
+                Button(
+                    onClick = onRetry
+                ) {
+                    Text("Try a new puzzle")
                 }
             },
-            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true)
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
         )
     }
 
@@ -190,17 +285,42 @@ class SudokuScreen : ComponentActivity() {
             sampleSudoku[7][6] = 2
             sampleSudoku[8][3] = 8
 
-            SudokuBoard(sampleSudoku) { _, _ ->
-                // No operation; this is just for previewing the layout.
-            }
+            SudokuBoard(sampleSudoku, null, { _, _ -> }, { _ -> })
         }
     }
 }
 
 fun generateSudokuPuzzle(): Array<Array<Int>> {
     val sudoku = Array(9) { Array(9) { 0 } }
-    solveSudoku(sudoku)
+    val solution = Array(9) { Array(9) { 0 } }
+
+    // Generate a valid solution
+    solveSudoku(solution)
+
+    // Copy the solution to the sudoku grid
+    for (i in 0 until 9) {
+        for (j in 0 until 9) {
+            sudoku[i][j] = solution[i][j]
+        }
+    }
+
+    // Remove numbers randomly while ensuring the puzzle remains solvable
+    removeNumbersFromSudoku(sudoku, 40) // Adjust the number of cells to remove as needed
+
     return sudoku
+}
+
+private fun removeNumbersFromSudoku(sudoku: Array<Array<Int>>, cellsToRemove: Int) {
+    val random = java.util.Random()
+    var count = 0
+    while (count < cellsToRemove) {
+        val row = random.nextInt(9)
+        val col = random.nextInt(9)
+        if (sudoku[row][col] != 0) {
+            sudoku[row][col] = 0
+            count++
+        }
+    }
 }
 
 private fun solveSudoku(sudoku: Array<Array<Int>>): Boolean {
