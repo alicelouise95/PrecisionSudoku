@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -129,7 +128,7 @@ class MainActivity : ComponentActivity() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
             // Display elapsed time above the puzzle box
             Text(
@@ -137,14 +136,14 @@ class MainActivity : ComponentActivity() {
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(bottom = 16.dp)
+                    .padding(top = 100.dp)
             )
 
             // Display Sudoku cells
             Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 30.dp) // Adjust the top padding to move the Sudoku puzzle down
+                    .padding(top = 130.dp) // Adjusted top padding
             ) {
                 for (i in 0 until 9) {
                     if (i % 3 == 0 && i != 0) {
@@ -171,7 +170,7 @@ class MainActivity : ComponentActivity() {
             Row(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .padding(top = 40.dp),
+                    .padding(top = 280.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
                 for (num in 1..9) {
@@ -199,7 +198,7 @@ class MainActivity : ComponentActivity() {
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .border(0.dp, if (isSelected) Color.Blue else Color.Black)
+                .border(1.5.dp, if (isSelected) Color.Blue else Color.Black)
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
@@ -256,7 +255,7 @@ class MainActivity : ComponentActivity() {
     fun MistakesCount(count: Int) {
         Box(
             modifier = Modifier
-                .padding(end = 16.dp)
+                .padding(end = 16.dp, top = 60.dp)
         ) {
             Text(
                 text = "Mistakes: $count / 3",
@@ -346,7 +345,7 @@ fun generateSudokuPuzzle(): Array<Array<Int>> {
 
     // Remove numbers randomly while ensuring the puzzle remains solvable
     val random = Random()
-    removeNumbersFromSudoku(sudoku, 1) // Adjust the range of cells to remove as needed
+    removeNumbersFromSudoku(sudoku, random.nextInt(50) + 20) // Adjust the range of cells to remove as needed
 
     return sudoku
 }
