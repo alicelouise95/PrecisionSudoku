@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
     private var mistakesCount by mutableStateOf(0)
     private var gameOverPopupVisible by mutableStateOf(false)
     private var wrongNumberVisible by mutableStateOf(false)
+    private var puzzleCompleted by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +54,9 @@ class MainActivity : ComponentActivity() {
                                     it[i][j] = number
                                     selectedCell = null
                                     wrongNumberVisible = false
+                                    if (isPuzzleCompleted(it)) {
+                                        puzzleCompleted = true
+                                    }
                                 }
                             } else {
                                 selectedCell = null
@@ -77,6 +81,13 @@ class MainActivity : ComponentActivity() {
                         mistakesCount = 0
                         gameOverPopupVisible = false
                         wrongNumberVisible = false // Reset the wrong number message visibility
+                    }
+                }
+
+                if (puzzleCompleted) {
+                    CongratsPopup {
+                        sudokuPuzzle = generateSudokuPuzzle()
+                        resetTimer() // Reset the timer when starting a new game
                     }
                 }
 
@@ -261,26 +272,28 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun GameOverPopup(onRetry: () -> Unit) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text("Game Over!") },
-            text = { Text("You've made 3 mistakes.") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onRetry()
-                        resetTimer() // Reset the timer when starting a new game
+        if (mistakesCount >= 3) {
+            AlertDialog(
+                onDismissRequest = { },
+                title = { Text("Game Over!") },
+                text = { Text("You've made 3 mistakes.") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            onRetry()
+                            resetTimer() // Reset the timer when starting a new game
+                        }
+                    ) {
+                        Text("Try a new puzzle")
                     }
-                ) {
-                    Text("Try a new puzzle")
-                }
-            },
-            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
-        )
+                },
+                properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+            )
+        }
     }
 
     @Composable
-    fun CongratsPopup() {
+    fun CongratsPopup(onRetry: () -> Unit) {
         AlertDialog(
             onDismissRequest = { },
             title = { Text("Congratulations!") },
@@ -292,8 +305,9 @@ class MainActivity : ComponentActivity() {
             confirmButton = {
                 Button(
                     onClick = {
-                        sudokuPuzzle = generateSudokuPuzzle()
+                        onRetry()
                         resetTimer() // Reset the timer when starting a new game
+                        puzzleCompleted = false // Reset the puzzleCompleted state
                     }
                 ) {
                     Text("Try another puzzle")
@@ -302,6 +316,7 @@ class MainActivity : ComponentActivity() {
             properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
         )
     }
+
 
     @Preview(showBackground = true)
     @Composable
