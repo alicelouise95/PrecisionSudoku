@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -23,8 +24,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.alicelouisew.sudooooku.ui.theme.SudooookuTheme
 import kotlinx.coroutines.*
 import java.util.Random
-
-
 
 class MainActivity : ComponentActivity() {
     private var sudokuPuzzle by mutableStateOf<Array<Array<Int>>?>(null)
@@ -44,16 +43,17 @@ class MainActivity : ComponentActivity() {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
-                    ) {
+                ) {
                     Image(
                         painter = painterResource(id = R.drawable.sudokugirl),
                         contentDescription = null,
+                        contentScale = ContentScale.FillBounds,
                         modifier = Modifier.fillMaxSize()
-                        )
+                    )
                 }
                 if (sudokuPuzzle == null) {
                     startTimer()
-                    sudokuPuzzle = generateSudokuPuzzle()
+                    sudokuPuzzle = generateSudokuPuzzle(Difficulty.MEDIUM) // Default to medium difficulty
                 }
 
                 Column(modifier = Modifier
@@ -62,62 +62,99 @@ class MainActivity : ComponentActivity() {
                     Text(
                         text = "Sudooooku",
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(top = 56.dp, bottom = 16.dp)
-                    )
+                        modifier = Modifier.padding(top = 30.dp, start = 100.dp)
 
+                    )
                 }
 
 
-                SudokuBoard(
-                    sudoku = sudokuPuzzle!!,
-                    selectedCell = selectedCell,
-                    onCellClicked = { i, j ->
-                        selectedCell = Pair(i, j)
-                    },
-                    onNumberSelected = { number ->
-                        selectedCell?.let { (i, j) ->
-                            val isValid = isNumberValid(sudokuPuzzle!!, i, j, number)
-                            if (isValid) {
-                                sudokuPuzzle?.let {
-                                    it[i][j] = number
-                                    selectedCell = null
-                                    wrongNumberVisible = false
-                                    if (isPuzzleCompleted(it)) {
-                                        puzzleCompleted = true
-                                    }
-                                }
-                            } else {
-                                selectedCell = null
-                                wrongNumberVisible = true
-                                mistakesCount++
-                                if (mistakesCount >= 3) {
-                                    gameOverPopupVisible = true
-                                } else {
-                                    CoroutineScope(Dispatchers.Main).launch {
-                                        delay(2000)
-                                        wrongNumberVisible = false
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Existing Sudoku board content
+                        SudokuBoard(
+                            sudoku = sudokuPuzzle!!,
+                            selectedCell = selectedCell,
+                            onCellClicked = { i, j ->
+                                selectedCell = Pair(i, j)
+                            },
+                            onNumberSelected = { number ->
+                                selectedCell?.let { (i, j) ->
+                                    val isValid = isNumberValid(sudokuPuzzle!!, i, j, number)
+                                    if (isValid) {
+                                        sudokuPuzzle?.let {
+                                            it[i][j] = number
+                                            selectedCell = null
+                                            wrongNumberVisible = false
+                                            if (isPuzzleCompleted(it)) {
+                                                puzzleCompleted = true
+                                            }
+                                        }
+                                    } else {
+                                        selectedCell = null
+                                        wrongNumberVisible = true
+                                        mistakesCount++
+                                        if (mistakesCount >= 3) {
+                                            gameOverPopupVisible = true
+                                        } else {
+                                            CoroutineScope(Dispatchers.Main).launch {
+                                                delay(2000)
+                                                wrongNumberVisible = false
+                                            }
+                                        }
                                     }
                                 }
                             }
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Button(onClick = { startNewGame(Difficulty.EASY)},
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xff1f6e6a)
+                                )
+                                ) {
+                                Text("Easy", style = MaterialTheme.typography.bodyLarge)
+                            }
+                            Button(onClick = { startNewGame(Difficulty.MEDIUM)},
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xff1f6e6a)
+                                )
+                                ) {
+                                Text("Medium",
+                                    style = MaterialTheme.typography.bodyLarge)
+                            }
+                            Button(onClick = { startNewGame(Difficulty.HARD) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xff1f6e6a)
+                                )
+                                ) {
+                                Text(text= "Hard",
+                                    style = MaterialTheme.typography.bodyLarge
+                                    )
+                            }
                         }
                     }
-                )
+                }
 
                 if (gameOverPopupVisible) {
                     GameOverPopup {
-                        sudokuPuzzle = generateSudokuPuzzle()
-                        mistakesCount = 0
-                        gameOverPopupVisible = false
-                        wrongNumberVisible = false // Reset the wrong number message visibility
+                        startNewGame(Difficulty.MEDIUM) // Default to medium difficulty
                     }
                 }
 
                 if (puzzleCompleted) {
                     CongratsPopup {
-                        sudokuPuzzle = generateSudokuPuzzle()
-                        resetTimer() // Reset the timer when starting a new game
+                        startNewGame(Difficulty.MEDIUM) // Default to medium difficulty
                     }
                 }
             }
@@ -158,9 +195,9 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier
                 .wrapContentHeight()
                 .wrapContentWidth()
-                .padding(top = 100.dp)  // Add top padding here to push everything down
+                .padding(top = 40.dp)  // Add top padding here to push everything down
                 .padding(20.dp)  // Maintain existing padding for other sides
-                .background(Color.White.copy(alpha = 0.8f))
+                .background(Color.White.copy(alpha = 0.7f))
         ) {
             Column {
                 // Header Row for Timer and Mistakes
@@ -277,7 +314,7 @@ class MainActivity : ComponentActivity() {
 
         Column(
             modifier = Modifier
-                .padding(bottom = 16.dp)
+                .padding(bottom = 10.dp, start = 100.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -286,24 +323,10 @@ class MainActivity : ComponentActivity() {
             ) {
                 Text(
                     text = "Wrong number!",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = Color.Red
                 )
             }
-        }
-    }
-
-    @Composable
-    fun MistakesCount(count: Int) {
-        Box(
-            modifier = Modifier
-                .padding(end = 16.dp, top = 60.dp)
-        ) {
-            Text(
-                text = "Mistakes: $count / 3",
-                style = MaterialTheme.typography.bodyMedium,
-                fontSize = 16.sp
-            )
         }
     }
 
@@ -359,6 +382,14 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private fun startNewGame(difficulty: Difficulty) {
+        sudokuPuzzle = generateSudokuPuzzle(difficulty)
+        resetTimer()
+        mistakesCount = 0
+        gameOverPopupVisible = false
+        wrongNumberVisible = false
+        puzzleCompleted = false
+    }
 
     @Preview(showBackground = true)
     @Composable
@@ -379,17 +410,19 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-fun generateSudokuPuzzle(): Array<Array<Int>> {
+fun generateSudokuPuzzle(difficulty: Difficulty): Array<Array<Int>> {
     val sudoku = Array(9) { Array(9) { 0 } }
 
-    // Fill the Sudoku puzzle with valid numbers
     fillSudoku(sudoku)
-
-    // Remove numbers randomly while ensuring the puzzle remains solvable
-    val random = Random()
-    removeNumbersFromSudoku(sudoku, random.nextInt(50) + 20) // Adjust the range of cells to remove as needed
+    removeNumbersFromSudoku(sudoku, difficulty.cellsToRemove)
 
     return sudoku
+}
+
+enum class Difficulty(val cellsToRemove: Int) {
+    EASY(20),
+    MEDIUM(40),
+    HARD(55)
 }
 
 fun fillSudoku(sudoku: Array<Array<Int>>) {
