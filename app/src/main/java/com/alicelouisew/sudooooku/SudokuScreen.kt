@@ -1,5 +1,6 @@
 package com.alicelouisew.sudooooku
 
+import android.graphics.Paint.Align
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -54,6 +55,20 @@ class MainActivity : ComponentActivity() {
                     startTimer()
                     sudokuPuzzle = generateSudokuPuzzle()
                 }
+
+                Column(modifier = Modifier
+                    .fillMaxSize()
+                ) {
+                    Text(
+                        text = "Sudooooku",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(top = 56.dp, bottom = 16.dp)
+                    )
+
+                }
+
 
                 SudokuBoard(
                     sudoku = sudokuPuzzle!!,
@@ -157,11 +172,11 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Text(
                         text = "Time: ${elapsedTime / 60}:${String.format("%02d", elapsedTime % 60)}",
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
                         text = "Mistakes: $mistakesCount / 3",
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
 
