@@ -240,7 +240,10 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier
                 .padding(4.dp)
                 .size(35.dp),
-            contentPadding = PaddingValues(0.dp)
+            contentPadding = PaddingValues(0.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xff1f6e6a)
+            )
         ) {
             Text(number.toString())
         }
