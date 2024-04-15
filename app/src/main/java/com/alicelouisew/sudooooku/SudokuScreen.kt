@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -19,6 +22,8 @@ import androidx.compose.ui.window.DialogProperties
 import com.alicelouisew.sudooooku.ui.theme.SudooookuTheme
 import kotlinx.coroutines.*
 import java.util.Random
+
+
 
 class MainActivity : ComponentActivity() {
     private var sudokuPuzzle by mutableStateOf<Array<Array<Int>>?>(null)
@@ -35,6 +40,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SudooookuTheme {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                    ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.sudokugirl),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize()
+                        )
+                }
                 if (sudokuPuzzle == null) {
                     startTimer()
                     sudokuPuzzle = generateSudokuPuzzle()
@@ -90,8 +105,6 @@ class MainActivity : ComponentActivity() {
                         resetTimer() // Reset the timer when starting a new game
                     }
                 }
-
-                MistakesCount(mistakesCount)
             }
         }
     }
@@ -118,6 +131,7 @@ class MainActivity : ComponentActivity() {
         timerJob = null
     }
 
+
     @Composable
     fun SudokuBoard(
         sudoku: Array<Array<Int>>,
@@ -127,63 +141,73 @@ class MainActivity : ComponentActivity() {
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp)
+                .wrapContentHeight()
+                .wrapContentWidth()
+                .padding(top = 100.dp)  // Add top padding here to push everything down
+                .padding(20.dp)  // Maintain existing padding for other sides
+                .background(Color.White.copy(alpha = 0.8f))
         ) {
-            // Display elapsed time above the puzzle box
-            Text(
-                text = "Time: ${elapsedTime / 60}:${String.format("%02d", elapsedTime % 60)}",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 100.dp)
-            )
+            Column {
+                // Header Row for Timer and Mistakes
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp), // Spacing between header and board
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Time: ${elapsedTime / 60}:${String.format("%02d", elapsedTime % 60)}",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                    Text(
+                        text = "Mistakes: $mistakesCount / 3",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
 
-            // Display Sudoku cells
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 130.dp) // Adjusted top padding
-            ) {
-                for (i in 0 until 9) {
-                    if (i % 3 == 0 && i != 0) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                    }
-                    Row {
-                        for (j in 0 until 9) {
-                            if (j % 3 == 0 && j != 0) {
-                                Spacer(modifier = Modifier.width(2.dp))
+                // Main Sudoku Grid Layout
+                Column(
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    for (i in 0 until 9) {
+                        if (i % 3 == 0 && i != 0) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                        }
+                        Row {
+                            for (j in 0 until 9) {
+                                if (j % 3 == 0 && j != 0) {
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                }
+                                val isSelected = selectedCell?.first == i && selectedCell.second == j
+                                SudokuCell(
+                                    number = sudoku[i][j],
+                                    onClick = { onCellClicked(i, j) },
+                                    isSelected = isSelected,
+                                    onNumberSelected = onNumberSelected
+                                )
                             }
-                            val isSelected = selectedCell?.first == i && selectedCell.second == j
-                            SudokuCell(
-                                number = sudoku[i][j],
-                                onClick = { onCellClicked(i, j) },
-                                isSelected = isSelected,
-                                onNumberSelected = onNumberSelected
-                            )
                         }
                     }
                 }
             }
 
-            // Display number buttons below the puzzle box
-            Row(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(top = 280.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
+            // Show wrong number message if needed
+            if (wrongNumberVisible) {
+                WrongNumberMessage()
+            }
+        }
+
+        Box(modifier = Modifier
+            .padding(top = 430.dp + 100.dp, start = 5.dp)  // Adjust this padding if necessary to position the number buttons correctly
+        ) {
+            // Number buttons layout remains unchanged
+            Row {
                 for (num in 1..9) {
                     NumberButton(
                         number = num,
                         onNumberSelected = onNumberSelected
                     )
                 }
-            }
-
-            // Show wrong number message
-            if (wrongNumberVisible) {
-                WrongNumberMessage()
             }
         }
     }
@@ -214,8 +238,8 @@ class MainActivity : ComponentActivity() {
         Button(
             onClick = { onNumberSelected(number) },
             modifier = Modifier
-                .padding(1.dp)
-                .size(30.dp),
+                .padding(4.dp)
+                .size(35.dp),
             contentPadding = PaddingValues(0.dp)
         ) {
             Text(number.toString())
