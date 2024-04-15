@@ -56,13 +56,15 @@ class MainActivity : ComponentActivity() {
                     sudokuPuzzle = generateSudokuPuzzle(Difficulty.MEDIUM) // Default to medium difficulty
                 }
 
-                Column(modifier = Modifier
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
                     .fillMaxSize()
                 ) {
                     Text(
                         text = "Sudooooku",
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(top = 30.dp, start = 100.dp)
+                        modifier = Modifier.padding(top = 30.dp)
 
                     )
                 }
@@ -195,8 +197,8 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier
                 .wrapContentHeight()
                 .wrapContentWidth()
-                .padding(top = 40.dp)  // Add top padding here to push everything down
-                .padding(20.dp)  // Maintain existing padding for other sides
+                .padding(top = 40.dp)
+                .padding(20.dp)
                 .background(Color.White.copy(alpha = 0.7f))
         ) {
             Column {
@@ -250,7 +252,7 @@ class MainActivity : ComponentActivity() {
         }
 
         Box(modifier = Modifier
-            .padding(top = 430.dp + 100.dp, start = 5.dp)  // Adjust this padding if necessary to position the number buttons correctly
+            .padding(top = 430.dp + 100.dp, start = 5.dp)
         ) {
             // Number buttons layout remains unchanged
             Row {
