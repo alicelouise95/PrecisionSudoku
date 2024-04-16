@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.sudokugirl),
+                        painter = painterResource(id = R.drawable.appbackground),
                         contentDescription = null,
                         contentScale = ContentScale.FillBounds,
                         modifier = Modifier.fillMaxSize()
@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
                 }
                 if (sudokuPuzzle == null) {
                     startTimer()
-                    sudokuPuzzle = generateSudokuPuzzle(Difficulty.MEDIUM) // Default to medium difficulty
+                    sudokuPuzzle = generateSudokuPuzzle(Difficulty.MEDIUM)
                 }
 
                 Column(
@@ -75,7 +75,6 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
-                        // Existing Sudoku board content
                         SudokuBoard(
                             sudoku = sudokuPuzzle!!,
                             selectedCell = selectedCell,
@@ -150,13 +149,13 @@ class MainActivity : ComponentActivity() {
 
                 if (gameOverPopupVisible) {
                     GameOverPopup {
-                        startNewGame(Difficulty.MEDIUM) // Default to medium difficulty
+                        startNewGame(Difficulty.MEDIUM)
                     }
                 }
 
                 if (puzzleCompleted) {
                     CongratsPopup {
-                        startNewGame(Difficulty.MEDIUM) // Default to medium difficulty
+                        startNewGame(Difficulty.MEDIUM)
                     }
                 }
             }
@@ -168,7 +167,7 @@ class MainActivity : ComponentActivity() {
         stopTimer()
     }
 
-    // Start timer coroutine
+
     private fun startTimer() {
         timerJob?.cancel()
         timerJob = MainScope().launch {
@@ -179,7 +178,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Stop timer coroutine
+
     private fun stopTimer() {
         timerJob?.cancel()
         timerJob = null
@@ -202,11 +201,10 @@ class MainActivity : ComponentActivity() {
                 .background(Color.White.copy(alpha = 0.7f))
         ) {
             Column {
-                // Header Row for Timer and Mistakes
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp), // Spacing between header and board
+                        .padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
@@ -219,7 +217,6 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                // Main Sudoku Grid Layout
                 Column(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
@@ -245,7 +242,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // Show wrong number message if needed
             if (wrongNumberVisible) {
                 WrongNumberMessage()
             }
@@ -254,7 +250,6 @@ class MainActivity : ComponentActivity() {
         Box(modifier = Modifier
             .padding(top = 430.dp + 100.dp, start = 5.dp)
         ) {
-            // Number buttons layout remains unchanged
             Row {
                 for (num in 1..9) {
                     NumberButton(
@@ -348,7 +343,7 @@ class MainActivity : ComponentActivity() {
                     Button(
                         onClick = {
                             onRetry()
-                            resetTimer() // Reset the timer when starting a new game
+                            resetTimer()
                         }
                     ) {
                         Text("Try a new puzzle")
@@ -373,8 +368,8 @@ class MainActivity : ComponentActivity() {
                 Button(
                     onClick = {
                         onRetry()
-                        resetTimer() // Reset the timer when starting a new game
-                        puzzleCompleted = false // Reset the puzzleCompleted state
+                        resetTimer()
+                        puzzleCompleted = false
                     }
                 ) {
                     Text("Try another puzzle")
@@ -428,7 +423,7 @@ enum class Difficulty(val cellsToRemove: Int) {
 }
 
 fun fillSudoku(sudoku: Array<Array<Int>>) {
-    solveSudoku(sudoku) // Start with a complete solution
+    solveSudoku(sudoku)
 }
 
 fun isPuzzleCompleted(sudoku: Array<Array<Int>>): Boolean {
@@ -458,12 +453,11 @@ fun removeNumbersFromSudoku(sudoku: Array<Array<Int>>, cellsToRemove: Int) {
 fun solveSudoku(sudoku: Array<Array<Int>>): Boolean {
     val emptyCell = findEmptyCell(sudoku)
     if (emptyCell == null) {
-        // If no empty cell is found, the puzzle is solved
         return true
     }
 
     val (row, col) = emptyCell
-    val numbers = (1..9).shuffled() // Shuffle the numbers to insert randomly
+    val numbers = (1..9).shuffled()
 
     for (number in numbers) {
         if (isNumberValid(sudoku, row, col, number)) {
@@ -489,15 +483,12 @@ fun findEmptyCell(sudoku: Array<Array<Int>>): Pair<Int, Int>? {
 }
 
 fun isNumberValid(sudoku: Array<Array<Int>>, row: Int, col: Int, number: Int): Boolean {
-    // Check row
     for (j in 0 until 9) {
         if (sudoku[row][j] == number) return false
     }
-    // Check column
     for (i in 0 until 9) {
         if (sudoku[i][col] == number) return false
     }
-    // Check 3x3 block
     val startRow = row / 3 * 3
     val startCol = col / 3 * 3
     for (i in startRow until startRow + 3) {
