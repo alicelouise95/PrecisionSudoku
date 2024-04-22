@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Sudooooku"
+rootProject.name = "Precision Sudoku"
 include(":app")
  

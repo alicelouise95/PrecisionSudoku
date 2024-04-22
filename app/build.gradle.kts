@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.alicelouisew.sudooooku"
+    namespace = "com.alicelouisew.PrecisionSudoku"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.alicelouisew.sudooooku"
+        applicationId = "com.alicelouisew.PrecisionSudoku"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
